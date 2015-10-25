@@ -164,6 +164,12 @@ class ListeningClient(MumbleClient.AutoChannelJoinClient):
             if not mimic.settings._mimic_wantDisconnect:
                 heapq.heappush(mimic.settings.voiceData,(time.time()+self.settings._mimic_delayTime,prefix+data))
 
+
+    def TextMessageReceived(self,message):
+        mimic = self.users[message.actor]
+        v = task.deferLater(reactor,self.settings._mimic_delayTime,mimic.sendTextMessage,message.message)
+        v.addErrback(self.errorCallback)
+        
     def sendVoiceData(self):
         self.checkMimics()
         while True:
