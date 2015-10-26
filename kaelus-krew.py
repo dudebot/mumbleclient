@@ -46,29 +46,31 @@ from twisted.internet import reactor, task
 
 class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
 
-    memes = []
-    def load_memes_usa(self,memefile):
-        with open(memefile,'r') as memular:
-            for meme in memular:
-                if meme.strip()!="":
-                    self.memes.append(meme.strip())
+    quotes = []
+    def loadQuotesFile(self,quotefile):
+        with open(quotefile,'r') as memular:
+            for quote in memular:
+                if quote.strip()!="":
+                    self.quotes.append(quote.strip())
 
-    def memetownusa(self):
-        self.sendTextMessage(self.memes[int(random.random()*len(self.memes))])
-        v = task.deferLater(reactor,self.settings.delayTime,self.memetownusa)
+    def sendRandomQuote(self):
+        self.sendTextMessage(self.quotes[int(random.random()*len(self.quotes))])
+        v = task.deferLater(reactor,self.settings.delayTime,self.sendRandomQuote)
         v.addErrback(self.errorCallback)
 
     def TextMessageReceived(self,message):
-        if( "mwo" in message.message.lower() or 
+        print(self.channelID,message.channel_id)
+        if( self.channelID in message.channel_id and #we are being broadcast to
+           ("mwo" in message.message.lower() or 
             "mechwarrior" in message.message.lower() or 
             "pgi" in message.message.lower() or 
-            "robots" in message.message.lower()):
+            "robots" in message.message.lower())):
             name = self.state.users[message.actor].name
             self.sendTextMessage("Please Leave %s, This is the Star Citizen channel. We don't talk about MWO here." %name)
         
     def ServerSyncReceived(self,message):
-        self.load_memes_usa(self.settings.memefile)
-        v = task.deferLater(reactor,5,self.memetownusa)
+        self.loadQuotesFile(self.settings.quotefile)
+        v = task.deferLater(reactor,5,self.sendRandomQuote)
         v.addErrback(self.errorCallback)
 
     def connectionLost(self,reason):
@@ -76,7 +78,7 @@ class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
 
 def main():
     p = optparse.OptionParser(description='Mumble 1.2 relaybot to relay comms from a match channel to a spectator channel, with a time delay e.g. if watching on a delayed SourceTV server. Full documentation is available at http://frymaster.127001.org/mumble',
-                prog='eve-bot2.py',
+                prog='kaelus-krew.py',
                 version='%prog 2.0',
                 usage='\t%prog -e \"Match Channel\" -r \"Spectator Channel\"')
 
@@ -85,7 +87,7 @@ def main():
     p.add_option("-p","--port",help="Port to connect to (default %default)",action="store",type="int",default=64738)
     p.add_option("-n","--nick",help="Nickname for the eavesdropper (default %default)",action="store",type="string",default="-Eve-")
     p.add_option("-d","--delay",help="How often to say a quote speech by in seconds (default %default)",action="store",type="float",default=90)
-    p.add_option("-m","--meme",help="Which file to load memes from (default %default)",action="store",type="string",default="memes.txt")
+    p.add_option("-q","--quote",help="Which file to load quotes from (default %default)",action="store",type="string",default="quotes.txt")
     p.add_option("--password",help="Password for server, if any",action="store",type="string")
 
     o, arguments = p.parse_args()
@@ -97,7 +99,7 @@ def main():
     s.host = o.server
     s.port = o.port
     s.password = o.password
-    s.memefile = o.meme
+    s.quotefile = o.quote
     eve = AutoQuoteClient(s)
     eve.connect()
     reactor.run()

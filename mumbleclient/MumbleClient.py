@@ -143,8 +143,6 @@ class MumbleClient(object):
         return self.controlConnected
 
     def _controlMessageReceived(self,type,name,messageObject):
-        #print(type,name,messageObject,str(dir(messageObject)))
-        #print(type,name,messageObject)
         try:
             f = getattr(self,"_"+name+"Received")
         except AttributeError:
@@ -172,7 +170,10 @@ class MumbleClient(object):
             name = i[0].name
             value = i[1]
             if name != "actor": setattr(user,name,value)
-            #print("adding k=%s v=%s for session=%s" % (name,value,message.session))
+        if message.session==self.sessionID:
+            print("changing channelID from %s to %s" %(self.channelID,message.channel_id))
+            self.channelID=message.channel_id
+
 
     def _UserRemoveReceived(self,message):
         self.state.users.pop(message.session,None)
@@ -180,11 +181,6 @@ class MumbleClient(object):
     def _TCPVoiceMessageReceived(self,data):
         prefix,session,data = MumbleVoiceProtocol.decodeAudioMessage(data)
         self.VoiceMessageReceived(prefix,session,data,TCP=True)
-
-
-
-
-
 
     def _unknownMessageReceived(self,type,data):
         pass
@@ -269,9 +265,11 @@ class MumbleClient(object):
         """
         if message is not None: self.controlProtocol.sendMessage(message)
 
-    def sendTextMessage(self,message):
+    def sendTextMessage(self,message,channel_id=None):
+        if channel_id == None:
+            channel_id = self.channelID
         tm = MumbleControlProtocol.TextMessage()
-        tm.actor = self.sessionID
+        tm.actor = channel_id
         tm.channel_id.append(self.channelID)
         tm.message = message
         self.sendMessage(tm)
@@ -378,7 +376,6 @@ class AutoChannelJoinClient(MumbleClient):
     def ChannelStateReceived(self,message):
         if message.name==self.settings._autojoin_joinChannel:
             self.channelID = message.channel_id
-        print(message.name,message.channel_id,message.description)
 
     def _ServerSyncReceived(self,message):
         super(AutoChannelJoinClient,self)._ServerSyncReceived(message)
