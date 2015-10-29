@@ -159,6 +159,7 @@ class ListeningClient(MumbleClient.AutoChannelJoinClient):
             self.checkSession(user)
 
     def VoiceMessageReceived(self,prefix,session,data,TCP=False):
+        print(prefix,self.state.users[session].name,data)
         if session in self.users:
             mimic = self.users[session]
             if not mimic.settings._mimic_wantDisconnect:

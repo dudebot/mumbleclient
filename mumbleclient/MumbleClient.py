@@ -60,6 +60,10 @@ class User(object):
     """Stores all information known about a user at this time"""
     pass
 
+class Channel(object):
+    """Stores all information known about a channel time"""
+    pass
+
 
 class _MumbleState(object):
 
@@ -67,6 +71,7 @@ class _MumbleState(object):
         self.numTCPPings=0
         self.avgTCPPing=0
         self.users=collections.defaultdict(User)
+        self.channels=collections.defaultdict(Channel)
 
 class Foo(object):
     pass
@@ -104,7 +109,7 @@ class MumbleClient(object):
     See MumbleControlProtocol for a list of MessageTypes.  Some are implemented in this class and can be
     overridden; some are not needed for base functionality but will be called if defined.  The exception is
     the UDPTunnel message, which is one of two possible ways voice data can be received.  In these cases
-    the :meth:`VoiceMessageRecieved` function is called whether the voice source was UDP or TCP.
+    the :meth:`VoiceMessageReceived` function is called whether the voice source was UDP or TCP.
 
     To tell if a message affects you, compare the message's session (target) or, optionally, actor (source)
     to self.sessionID.  Note that you cannot react to events (cannot send arbitrary messages) until
@@ -171,8 +176,14 @@ class MumbleClient(object):
             value = i[1]
             if name != "actor": setattr(user,name,value)
         if message.session==self.sessionID:
-            print("changing channelID from %s to %s" %(self.channelID,message.channel_id))
             self.channelID=message.channel_id
+
+    def _ChannelStateReceived(self,message):
+        channel = self.state.channels[message.channel_id]
+        for i in message.ListFields():
+            name = i[0].name
+            value = i[1]
+            setattr(channel,name,value)
 
 
     def _UserRemoveReceived(self,message):

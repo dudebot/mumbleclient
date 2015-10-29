@@ -72,7 +72,7 @@ class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
         pass
 
     def TextMessageReceived(self,message):
-        #print(message.message)
+        sender = self.state.users[message.actor].name
         if( self.channelID in message.channel_id and #we are being broadcast to
            ("mwo" in message.message.lower() or 
             "mechwarrior" in message.message.lower() or 
@@ -80,10 +80,9 @@ class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
             " fun" in message.message.lower() or
             "games" in message.message.lower() or
             "robots" in message.message.lower())):
-            name = self.state.users[message.actor].name
             if (self.lastResponse+self.responseDelay)<time.time():
                 self.lastResponse = time.time()
-                self.sendTextMessage("%s, This is the Star Citizen channel." %name)
+                self.sendTextMessage("%s, This is the Star Citizen channel." %sender)
                 return
 
         if(message.message.lower().startswith("!help")):
@@ -106,7 +105,6 @@ class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
             except Exception, e: pass
         if(message.message.lower().startswith("!norris")):
             #try:
-                print("here")
                 with open("recorded.aud",'rb') as norrfile:
                     data = norrfile.read()
                     for line in data.split("&*(*&"):
@@ -114,13 +112,10 @@ class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
                         print(len(line))
                         self.sendVoiceMessage(line)
                         #time.sleep(0.05)
-                        print("line sent")
-
             #except Exception, e: pass
 
         if(message.message.lower().startswith("!meme")):
             #try:
-                print("here")
                 with open("recorded3.aud",'rb') as norrfile:
                     data = norrfile.read()
                     for line in data.split("&*(*&"):
@@ -128,7 +123,27 @@ class AutoQuoteClient(MumbleClient.AutoChannelJoinClient):
                         print(len(line))
                         self.sendVoiceMessage(line)
                         time.sleep(0.00001)
-                        print("line sent")
+
+        if(message.message.lower().startswith("!move ")):
+            if "dudeb" in sender.lower() or "borgdorg" in sender.lower():
+                channel_name = message.message[6:]
+                found=False
+                print("number of channels: %s" %len(self.state.channels))
+                for i,channel in self.state.channels.iteritems():
+                    print(i,channel.name)
+                    if channel.name.lower()==channel_name.lower():
+                        channel_id_to_move=i
+                        found=True
+                        break
+                if found:
+                    newMessage = MumbleControlProtocol.UserState()
+                    newMessage.session = self.sessionID
+                    newMessage.channel_id=channel_id_to_move
+                    self.sendMessage(newMessage)
+                else:
+                    self.sendTextMessage("Channel does not exist: %s" % channel_name)
+                    
+
         if(message.message.lower().startswith("!ark ")):
             try:
                 #generate server listing of people on that ark server name
